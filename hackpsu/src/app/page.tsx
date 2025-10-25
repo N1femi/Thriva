@@ -4,8 +4,50 @@ import { motion } from "framer-motion";
 import { Calendar, Bell, Users, ArrowRight, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
 
 export default function HomePage() {
+    const { user, loading } = useAuth();
+
+    // Show loading state while checking authentication
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-neutral-50 text-neutral-800 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-neutral-800 mx-auto mb-4"></div>
+                    <p className="text-neutral-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // If user is authenticated, redirect to dashboard
+    if (user) {
+        return (
+            <div className="min-h-screen bg-neutral-50 text-neutral-800 flex items-center justify-center">
+                <div className="text-center">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-6"
+                    >
+                        <h1 className="text-4xl font-bold">Welcome back!</h1>
+                        <p className="text-lg text-neutral-600 mb-8">
+                            You're already signed in. Ready to continue your journey?
+                        </p>
+                        <Link
+                            href="/app/home"
+                            className="inline-flex items-center gap-2 bg-neutral-800 text-white px-6 py-3 rounded-2xl text-lg font-medium hover:bg-neutral-700 transition"
+                        >
+                            Go to Dashboard
+                            <ArrowRight className="w-5 h-5" />
+                        </Link>
+                    </motion.div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <main className="min-h-screen bg-neutral-50 text-neutral-800 flex flex-col items-center justify-center">
             {/* Hero Section */}
@@ -30,13 +72,20 @@ export default function HomePage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
+                    className="flex flex-col sm:flex-row gap-4 justify-center"
                 >
                     <Link
-                        href="/signup"
+                        href="/auth"
                         className="inline-flex items-center gap-2 bg-neutral-800 text-white px-6 py-3 rounded-2xl text-lg font-medium hover:bg-neutral-700 transition"
                     >
                         Get Started
                         <ArrowRight className="w-5 h-5" />
+                    </Link>
+                    <Link
+                        href="/auth"
+                        className="inline-flex items-center gap-2 border border-neutral-300 text-neutral-800 px-6 py-3 rounded-2xl text-lg font-medium hover:bg-neutral-100 transition"
+                    >
+                        Sign In
                     </Link>
                 </motion.div>
             </section>
@@ -74,7 +123,7 @@ export default function HomePage() {
                     Join thousands improving their lives one habit at a time.
                 </p>
                 <Link
-                    href="/signup"
+                    href="/auth"
                     className="inline-flex items-center gap-2 bg-neutral-800 text-white px-6 py-3 rounded-2xl text-lg font-medium hover:bg-neutral-700 transition"
                 >
                     Start for Free
