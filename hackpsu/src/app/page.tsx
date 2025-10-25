@@ -33,7 +33,7 @@ export default function HomePage() {
                     >
                         <h1 className="text-4xl font-bold">Welcome back!</h1>
                         <p className="text-lg text-neutral-600 mb-8">
-                            You're already signed in. Ready to continue your journey?
+                            You&#39;re already signed in. Ready to continue your journey?
                         </p>
                         <Link
                             href="/app/home"
