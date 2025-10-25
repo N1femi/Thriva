@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/protected-route";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { HeroSection } from "@/components/hero-sect"
 
 export default function HomePage() {
     const { user, signOut } = useAuth();
@@ -51,6 +52,9 @@ export default function HomePage() {
                         </div>
                     </div>
                 </header>
+
+                {/* Start of Main Page */}
+                <HeroSection />
             </div>
         </ProtectedRoute>
     );
