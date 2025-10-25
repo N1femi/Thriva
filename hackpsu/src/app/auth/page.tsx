@@ -9,7 +9,7 @@ export default function AuthPage() {
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="flex items-center justify-center mb-8">
-                    <a href="/" className="flex items-center gap-2 font-semibold text-xl">
+                    <a href="/hackpsu/public" className="flex items-center gap-2 font-semibold text-xl">
                         <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
                             <GalleryVerticalEnd className="size-5" />
                         </div>
