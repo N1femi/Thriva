@@ -26,15 +26,7 @@ export default function ChattingPage() {
     useEffect(() => {
         const initialMessage: Message = {
             role: "assistant",
-            content: `Hello! I'm your personal self-development coach. I'm here to help you reflect, grow, and achieve your goals.
-
-Let me start by asking you a few questions:
-
-1. What's one goal you'd like to work towards?
-2. How are you feeling today?
-3. What's been on your mind lately?
-
-Feel free to answer any of these, or share whatever you'd like to talk about!`,
+            content: `Hello! I'm your personal self-development coach. I'm here to help you reflect, grow, and achieve your goals.`,
         };
         setMessages([initialMessage]);
     }, []);
