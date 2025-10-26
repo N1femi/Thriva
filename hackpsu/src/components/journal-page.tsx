@@ -1,3 +1,4 @@
+"use client"
 import React, { useState } from 'react';
 import { BookOpen, Plus, Calendar, Tag, Search } from 'lucide-react';
 
