@@ -50,31 +50,21 @@ export default function JournalPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-cyan-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BookOpen className="w-8 h-8 text-cyan-600" />
-              <h1 className="text-3xl font-bold text-cyan-900">My Journal</h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="p-2 hover:bg-cyan-100 rounded-full transition-colors">
-                <Search className="w-5 h-5 text-cyan-700" />
-              </button>
-              <button 
-                onClick={() => setIsWriting(!isWriting)}
-                className="flex items-center gap-2 bg-cyan-600 text-white px-4 py-2 rounded-full hover:bg-cyan-700 transition-all shadow-md hover:shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-                <span className="font-medium">New Entry</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-5xl mx-auto px-6 py-8">
+        {/* Header Section */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <BookOpen className="w-8 h-8 text-cyan-600" />
+            <h1 className="text-3xl font-bold text-cyan-900">My Journal</h1>
+          </div>
+          <button 
+            onClick={() => setIsWriting(!isWriting)}
+            className="flex items-center gap-2 bg-cyan-600 text-white px-6 py-3 rounded-full hover:bg-cyan-700 transition-all shadow-lg hover:shadow-xl"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="font-medium">New Entry</span>
+          </button>
+        </div>
         {/* New Entry Form */}
         {isWriting && (
           <div className="mb-8 bg-white rounded-2xl shadow-xl p-8 border-2 border-cyan-200 animate-fadeIn">
