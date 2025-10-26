@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { handleServerError } from "@/lib/error";
+import { checkCalendarBadges } from "@/lib/badge-helper";
 import { createClient } from '@supabase/supabase-js';
 
 // Helper to get authenticated Supabase client
@@ -158,6 +159,14 @@ export async function POST(req: Request) {
                 { success: false, error: error.message || 'Failed to create event' },
                 { status: 500 }
             );
+        }
+
+        // Check for badge eligibility
+        try {
+            await checkCalendarBadges(supabase, user.id);
+        } catch (badgeError) {
+            console.error('Badge check error:', badgeError);
+            // Don't fail the request if badge check fails
         }
 
         return NextResponse.json(

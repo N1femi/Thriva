@@ -22,22 +22,18 @@
         "name": "next"
       }
     ],
-    "baseUrl": "./src", // ⬅️ New: treat /src as the project root
+    "baseUrl": "./src",
     "paths": {
       "@/*": [
         "*"
-      ] // ⬅️ Updated: resolves to /src/*
+      ]
     }
   },
   "include": [
     "next-env.d.ts",
-    "src/**/*", // ⬅️ Only look inside /src
+    "src/**/*",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "src/**/*.mts" // ⬅️ Adjusted for modules inside /src
-    ,
-    ".next\\dev/types/**/*.ts",
-    ".next\\dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

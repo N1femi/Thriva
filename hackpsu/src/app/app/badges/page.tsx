@@ -15,9 +15,15 @@ import {
     Target,
     Book,
     Calendar,
+    CalendarPlus,
+    CalendarCheck,
+    CalendarRange,
     Users,
+    CheckCircle,
+    Coffee,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -31,6 +37,11 @@ const iconMap: Record<string, any> = {
     'target': Target,
     'book': Book,
     'calendar': Calendar,
+    'calendar-plus': CalendarPlus,
+    'calendar-check': CalendarCheck,
+    'calendar-range': CalendarRange,
+    'check': CheckCircle,
+    'coffee': Coffee,
     'users': Users,
 };
 
@@ -53,10 +64,27 @@ export default function BadgesPage() {
             try {
                 if (!user) return;
 
-                const token = await user.getIdToken();
+                // Get fresh session to ensure we have latest token
+                const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError || !freshSession) {
+                    console.error('Session error:', sessionError);
+                    setBadges([]);
+                    return;
+                }
+                
+                // Get access token from fresh session
+                const accessToken = freshSession?.access_token;
+                
+                if (!accessToken) {
+                    console.error('No access token available');
+                    setBadges([]);
+                    return;
+                }
+
                 const response = await fetch('/api/badges', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${accessToken}`
                     }
                 });
 

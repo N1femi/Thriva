@@ -16,11 +16,17 @@ import {
     Star,
     Book,
     Calendar as CalendarIcon,
+    CalendarPlus,
+    CalendarCheck,
+    CalendarRange,
     Users,
+    CheckCircle,
+    Coffee,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const iconMap: Record<string, any> = {
     'book-open': BookOpen,
@@ -32,6 +38,11 @@ const iconMap: Record<string, any> = {
     'target': Target,
     'book': Book,
     'calendar': CalendarIcon,
+    'calendar-plus': CalendarPlus,
+    'calendar-check': CalendarCheck,
+    'calendar-range': CalendarRange,
+    'check': CheckCircle,
+    'coffee': Coffee,
     'users': Users,
 };
 
@@ -56,10 +67,27 @@ export default function DashboardPageComponent() {
             try {
                 if (!user) return;
 
-                const token = await user.getIdToken();
+                // Get fresh session to ensure we have latest token
+                const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError || !freshSession) {
+                    console.error('Session error:', sessionError);
+                    setBadges([]);
+                    return;
+                }
+                
+                // Get access token from fresh session
+                const accessToken = freshSession?.access_token;
+                
+                if (!accessToken) {
+                    console.error('No access token available');
+                    setBadges([]);
+                    return;
+                }
+
                 const response = await fetch('/api/badges', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${accessToken}`
                     }
                 });
 
