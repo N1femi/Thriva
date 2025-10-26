@@ -48,7 +48,7 @@ export default function DashboardPageComponent() {
     return (
         <div>
             {/* Main Dashboard Content */}
-            <main className="max-w-7xl mx-auto px-6 py-12">
+            <main className="max-w-7xl mx-auto px-6 py-12 pb-24 overflow-scroll">
                 {/* 2x2 Grid Layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)] min-h-[600px]">
 
