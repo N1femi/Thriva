@@ -44,7 +44,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                         <div className="bg-primary text-primary-foreground flex size-8 items-center justify-center rounded-lg">
                                             <Target className="size-5" />
                                         </div>
-                                        <h1 className="text-xl font-semibold">HackPSU</h1>
+                                        <h1 className="text-xl font-semibold">Thryva</h1>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">

@@ -89,7 +89,7 @@ export function AppSidebar({
             >
               <a href="/app/home">
                 <Target className="!size-5" />
-                <span className="text-base font-semibold">HackPSU</span>
+                <span className="text-base font-semibold">Thryva</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
