@@ -76,8 +76,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    try {
+      // Check if there's a session first
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If no session exists, just clear local state
+      if (!session) {
+        setSession(null);
+        setUser(null);
+        return { error: null };
+      }
+      
+      // If session exists, sign out
+      const { error } = await supabase.auth.signOut();
+      
+      // Clear local state after sign out
+      setSession(null);
+      setUser(null);
+      
+      return { error };
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      // Clear local state even if sign out fails
+      setSession(null);
+      setUser(null);
+      return { error: null };
+    }
   };
 
   const signInWithGoogle = async () => {

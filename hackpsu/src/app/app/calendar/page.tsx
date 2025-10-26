@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PlusIcon, ArrowLeftIcon, X, CheckCircle, Bell, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 
 // Assuming these components are available and styled with Tailwind
 // They've been replaced with custom styled divs/buttons where necessary for simplicity
@@ -104,7 +105,17 @@ export default function Calendar31() {
         try {
             const dateStr = targetDate.toISOString().split('T')[0];
             
-            const accessToken = session?.access_token;
+            // Get fresh session to ensure we have latest token
+            const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError || !freshSession) {
+                console.error('Session error:', sessionError);
+                toast.error('Not authenticated');
+                setEvents([]);
+                return;
+            }
+            
+            const accessToken = freshSession?.access_token;
             
             if (!accessToken) {
                 console.error('No access token available');
@@ -139,7 +150,7 @@ export default function Calendar31() {
         } finally {
             setLoading(false);
         }
-    }, [user]);
+    }, [user, session]);
 
     // Fetch events when date changes
     React.useEffect(() => {
@@ -163,8 +174,16 @@ export default function Calendar31() {
             const endDateTime = new Date(date);
             endDateTime.setHours(endHour, endMinute);
 
-            // Get the access token from session
-            const accessToken = session?.access_token;
+            // Get fresh session to ensure we have latest token
+            const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError || !freshSession) {
+                console.error('Session error:', sessionError);
+                toast.error('Not authenticated. Please sign in again.');
+                return;
+            }
+            
+            const accessToken = freshSession?.access_token;
             
             if (!accessToken) {
                 toast.error('Not authenticated. Please sign in again.');
@@ -216,7 +235,16 @@ export default function Calendar31() {
 
         setLoading(true);
         try {
-            const accessToken = session?.access_token;
+            // Get fresh session to ensure we have latest token
+            const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError || !freshSession) {
+                console.error('Session error:', sessionError);
+                toast.error('Not authenticated');
+                return;
+            }
+            
+            const accessToken = freshSession?.access_token;
             
             if (!accessToken) {
                 toast.error('Not authenticated');

@@ -41,24 +41,35 @@ export default function ChattingPage() {
         setIsLoading(true);
         
         try {
-            const response = await fetch("/app/chat", {
+            // Filter out initial assistant messages (like the greeting) before the first user message
+            let firstUserIndex = newMessages.findIndex(msg => msg.role === "user");
+            const messagesToSend = firstUserIndex >= 0 
+                ? newMessages.slice(firstUserIndex)
+                : newMessages;
+            
+            const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    messages: newMessages.map((msg) => ({
+                    messages: messagesToSend.map((msg) => ({
                         role: msg.role,
                         content: msg.content,
                     })),
                 }),
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to get response");
-            }
-
             const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.error || `Server returned ${response.status}`);
+            }
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
             const assistantMessage: Message = {
                 role: "assistant",
                 content: data.content?.[0]?.text || "Sorry, I couldn't respond.",
@@ -67,11 +78,12 @@ export default function ChattingPage() {
             setMessages([...newMessages, assistantMessage]);
         } catch (error) {
             console.error("Error:", error);
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
             setMessages([
                 ...newMessages,
                 {
                     role: "assistant",
-                    content: "I'm sorry, I'm having trouble connecting right now. Please try again.",
+                    content: `I'm sorry, I'm having trouble connecting right now: ${errorMessage}`,
                 },
             ]);
         } finally {

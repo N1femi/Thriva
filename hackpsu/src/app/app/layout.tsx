@@ -16,11 +16,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const handleSignOut = async () => {
         try {
             const { error } = await signOut();
-            if (error) throw error;
+            // Clear local storage as well
+            if (typeof window !== 'undefined') {
+                localStorage.clear();
+            }
+            if (error) {
+                console.error('Sign out error:', error);
+                // Still redirect even if there's an error
+            }
             toast.success("Successfully signed out!");
             router.push("/");
         } catch (error: any) {
-            toast.error(error.message || "Failed to sign out");
+            console.error('Sign out error:', error);
+            // Clear local storage even if there's an error
+            if (typeof window !== 'undefined') {
+                localStorage.clear();
+            }
+            // Still redirect to ensure user is logged out
+            router.push("/");
         }
     };
 
