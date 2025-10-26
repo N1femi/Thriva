@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                             </div>
                         </div>
                     </header>
-                    <main className="h-[calc(100vh-4rem)] overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
+                    <main className="h-[calc(100vh-4rem)] overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100">
                         {children}
                     </main>
                 </SidebarInset>

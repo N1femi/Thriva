@@ -49,14 +49,11 @@ export default function JournalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50">
+    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50">
       <main className="max-w-5xl mx-auto px-6 py-8">
         {/* Header Section */}
         <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3">
-            <BookOpen className="w-8 h-8 text-cyan-600" />
-            <h1 className="text-3xl font-bold text-cyan-900">My Journal</h1>
-          </div>
+          <h1 className="text-3xl font-bold text-cyan-900">My Journal</h1>
           <button 
             onClick={() => setIsWriting(!isWriting)}
             className="flex items-center gap-2 bg-cyan-600 text-white px-6 py-3 rounded-full hover:bg-cyan-700 transition-all shadow-lg hover:shadow-xl"
