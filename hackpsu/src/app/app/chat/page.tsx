@@ -106,7 +106,7 @@ Focus on helping users with goal setting, building healthy habits, managing stre
     };
 
     return (
-        <div className="flex flex-col h-screen bg-gradient-to-br from-teal-50 to-cyan-50">
+        <div className="flex flex-col h-[calc(100vh-4rem)] bg-gradient-to-br from-teal-50 to-cyan-50">
             {/* Messages Container */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
                 {/* Chat Messages */}
