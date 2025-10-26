@@ -1,9 +1,5 @@
-import DashboardPageComponent from "@/components/main-page";
+import { redirect } from "next/navigation";
 
-export default function MainPage() {
-    return (
-        <>
-            <DashboardPageComponent/>
-        </>
-    );
+export default function AppPage() {
+    redirect("/app/home");
 }
