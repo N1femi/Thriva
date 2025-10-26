@@ -9,23 +9,80 @@ import {
     Flame,
     Heart,
     Clock,
+    BookOpen,
+    Sunrise,
+    Moon,
+    Shield,
+    Star,
+    Book,
+    Calendar as CalendarIcon,
+    Users,
 } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { useEffect, useState } from "react";
+
+const iconMap: Record<string, any> = {
+    'book-open': BookOpen,
+    'flame': Flame,
+    'sunrise': Sunrise,
+    'moon': Moon,
+    'shield': Shield,
+    'star': Star,
+    'target': Target,
+    'book': Book,
+    'calendar': CalendarIcon,
+    'users': Users,
+};
+
+interface Badge {
+    id: string;
+    name: string;
+    description: string;
+    icon_name: string;
+    requirement: string;
+    earned?: boolean;
+}
 
 // --- Dashboard Main Screen ---
 export default function DashboardPageComponent() {
     const { user, loading } = useAuth();
+    const [badges, setBadges] = useState<Badge[]>([]);
+    const [isLoadingBadges, setIsLoadingBadges] = useState(true);
 
-    // Mock data - replace with real data from your API
+    // Fetch badges from API
+    useEffect(() => {
+        const fetchBadges = async () => {
+            try {
+                if (!user) return;
+
+                const token = await user.getIdToken();
+                const response = await fetch('/api/badges', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // Only show earned badges or first 3 badges
+                        const earnedBadges = data.data.filter((b: Badge) => b.earned).slice(0, 3);
+                        setBadges(earnedBadges);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching badges:', error);
+            } finally {
+                setIsLoadingBadges(false);
+            }
+        };
+
+        fetchBadges();
+    }, [user]);
+
     const userName = user?.name || "User";
     const todaysFocus = "Practice mindful breathing and complete your gratitude journal";
-
-    const badges = [
-        { id: 1, name: "7-Day Streak", icon: <Flame />, color: "bg-orange-100 text-orange-600" },
-        { id: 2, name: "Early Bird", icon: <Award />, color: "bg-blue-100 text-blue-600" },
-        { id: 3, name: "Wellness Warrior", icon: <Trophy />, color: "bg-yellow-100 text-yellow-600" },
-    ];
 
     const upcomingEvents = [
         { id: 1, title: "Morning Meditation", time: "8:00 AM", date: "Today" },
@@ -118,25 +175,41 @@ export default function DashboardPageComponent() {
                             <Trophy className="w-7 h-7 text-yellow-600" />
                             <h2 className="text-2xl font-bold text-slate-900">Your Badges</h2>
                         </div>
-                        <div className="space-y-4">
-                            {badges.map((badge, index) => (
-                                <motion.div
-                                    key={badge.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
-                                    className={`flex items-center gap-4 p-4 rounded-2xl ${badge.color} transition hover:scale-105 cursor-pointer`}
-                                >
-                                    <div className="p-3 bg-white/50 rounded-xl">
-                                        {badge.icon}
-                                    </div>
-                                    <span className="font-semibold text-lg">{badge.name}</span>
-                                </motion.div>
-                            ))}
-                        </div>
+                        {isLoadingBadges ? (
+                            <div className="flex items-center justify-center py-8">
+                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600"></div>
+                            </div>
+                        ) : badges.length > 0 ? (
+                            <div className="space-y-4">
+                                {badges.map((badge, index) => {
+                                    const Icon = iconMap[badge.icon_name] || Award;
+                                    return (
+                                        <Link key={badge.id} href="/app/badges">
+                                            <motion.div
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ duration: 0.3, delay: 0.3 + index * 0.1 }}
+                                                className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 transition hover:scale-105 cursor-pointer"
+                                            >
+                                                <div className="p-3 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl shadow-lg">
+                                                    <Icon className="w-6 h-6 text-white" />
+                                                </div>
+                                                <span className="font-semibold text-lg text-slate-900">{badge.name}</span>
+                                            </motion.div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-slate-500">
+                                <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                                <p>No badges earned yet</p>
+                                <p className="text-sm mt-1">Keep working towards your goals!</p>
+                            </div>
+                        )}
                         <div className="mt-6 pt-6 border-t border-slate-200">
                             <Link
-                                href="/badges"
+                                href="/app/badges"
                                 className="text-teal-600 hover:text-teal-700 font-medium flex items-center gap-2"
                             >
                                 View all badges
