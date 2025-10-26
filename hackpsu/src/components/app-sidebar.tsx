@@ -52,19 +52,9 @@ const navData = {
   navSecondary: [
     {
       title: "Settings",
-      url: "#",
+      url: "/app/settings",
       icon: Settings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: HelpCircle,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: Search,
-    },
+    }
   ],
 }
 

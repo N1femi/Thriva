@@ -4,75 +4,22 @@ import React, { useState, useEffect } from "react";
 import { Eye, Type, Zap, Palette, Check } from "lucide-react";
 
 interface AccessibilitySettings {
-    // Color Vision Adjustments
     protanopia: number;
     deuteranopia: number;
     tritanopia: number;
-    
-    // Display Settings
     fontSize: number;
     reduceMotion: boolean;
     highContrast: boolean;
-    
-    // Theme Settings
     websiteTheme: "teal" | "purple" | "blue" | "rose" | "green" | "orange";
 }
 
-const themeColors = {
-    teal: {
-        name: "Ocean Teal",
-        primary: "from-teal-500 to-cyan-600",
-        bg: "from-teal-50 to-cyan-50",
-        light: "bg-teal-50",
-        accent: "bg-teal-500",
-        text: "text-teal-600",
-        border: "border-teal-200",
-    },
-    purple: {
-        name: "Royal Purple",
-        primary: "from-purple-500 to-violet-600",
-        bg: "from-purple-50 to-violet-50",
-        light: "bg-purple-50",
-        accent: "bg-purple-500",
-        text: "text-purple-600",
-        border: "border-purple-200",
-    },
-    blue: {
-        name: "Sky Blue",
-        primary: "from-blue-500 to-indigo-600",
-        bg: "from-blue-50 to-indigo-50",
-        light: "bg-blue-50",
-        accent: "bg-blue-500",
-        text: "text-blue-600",
-        border: "border-blue-200",
-    },
-    rose: {
-        name: "Sunset Rose",
-        primary: "from-rose-500 to-pink-600",
-        bg: "from-rose-50 to-pink-50",
-        light: "bg-rose-50",
-        accent: "bg-rose-500",
-        text: "text-rose-600",
-        border: "border-rose-200",
-    },
-    green: {
-        name: "Forest Green",
-        primary: "from-green-500 to-emerald-600",
-        bg: "from-green-50 to-emerald-50",
-        light: "bg-green-50",
-        accent: "bg-green-500",
-        text: "text-green-600",
-        border: "border-green-200",
-    },
-    orange: {
-        name: "Warm Orange",
-        primary: "from-orange-500 to-amber-600",
-        bg: "from-orange-50 to-amber-50",
-        light: "bg-orange-50",
-        accent: "bg-orange-500",
-        text: "text-orange-600",
-        border: "border-orange-200",
-    },
+const themes = {
+    teal: { name: "Teal", color: "bg-teal-500", light: "bg-teal-50", text: "text-teal-600", border: "border-teal-500" },
+    purple: { name: "Purple", color: "bg-purple-500", light: "bg-purple-50", text: "text-purple-600", border: "border-purple-500" },
+    blue: { name: "Blue", color: "bg-blue-500", light: "bg-blue-50", text: "text-blue-600", border: "border-blue-500" },
+    rose: { name: "Rose", color: "bg-rose-500", light: "bg-rose-50", text: "text-rose-600", border: "border-rose-500" },
+    green: { name: "Green", color: "bg-green-500", light: "bg-green-50", text: "text-green-600", border: "border-green-500" },
+    orange: { name: "Orange", color: "bg-orange-500", light: "bg-orange-50", text: "text-orange-600", border: "border-orange-500" },
 };
 
 export default function SettingsPage() {
@@ -86,7 +33,6 @@ export default function SettingsPage() {
         websiteTheme: "teal",
     });
 
-    // Load settings from localStorage on mount
     useEffect(() => {
         const saved = localStorage.getItem("accessibility-settings");
         if (saved) {
@@ -98,15 +44,9 @@ export default function SettingsPage() {
         }
     }, []);
 
-    // Apply settings whenever they change
     useEffect(() => {
-        applyAccessibilitySettings(settings);
-    }, [settings]);
-
-    const applyAccessibilitySettings = (settings: AccessibilitySettings) => {
         const root = document.documentElement;
 
-        // Apply color filters
         let filters = [];
         if (settings.protanopia > 0) {
             filters.push(`url(#protanopia-${Math.round(settings.protanopia / 25) * 25})`);
@@ -127,12 +67,9 @@ export default function SettingsPage() {
             root.style.setProperty("--animation-duration", "200ms");
         }
 
-        // Apply theme
         root.setAttribute("data-theme", settings.websiteTheme);
-
-        // Save to localStorage
         localStorage.setItem("accessibility-settings", JSON.stringify(settings));
-    };
+    }, [settings]);
 
     const updateSetting = <K extends keyof AccessibilitySettings>(
         key: K,
@@ -141,164 +78,136 @@ export default function SettingsPage() {
         setSettings((prev) => ({ ...prev, [key]: value }));
     };
 
-    const currentTheme = themeColors[settings.websiteTheme];
+    const theme = themes[settings.websiteTheme];
 
     return (
-        <div className="max-w-5xl mx-auto p-6 space-y-6">
-            {/* Header */}
-            <div className="space-y-1">
-                <h1 className="text-3xl font-bold text-slate-900">Settings</h1>
-                <p className="text-slate-600">
-                    Customize your experience and accessibility preferences
-                </p>
-            </div>
+        <>
+            {/* SVG Filters - Hidden but necessary for color blindness adjustments */}
+            <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+                <defs>
+                    {/* Protanopia Filters */}
+                    <filter id="protanopia-0"><feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>
+                    <filter id="protanopia-25"><feColorMatrix type="matrix" values="0.817 0.183 0 0 0 0.333 0.667 0 0 0 0.000 0.125 0.875 0 0 0 0 0 1 0"/></filter>
+                    <filter id="protanopia-50"><feColorMatrix type="matrix" values="0.567 0.433 0 0 0 0.558 0.442 0 0 0 0.000 0.242 0.758 0 0 0 0 0 1 0"/></filter>
+                    <filter id="protanopia-75"><feColorMatrix type="matrix" values="0.367 0.633 0 0 0 0.734 0.266 0 0 0 0.000 0.367 0.633 0 0 0 0 0 1 0"/></filter>
+                    <filter id="protanopia-100"><feColorMatrix type="matrix" values="0.152 0.848 0 0 0 0.114 0.886 0 0 0 0.000 0.000 1.000 0 0 0 0 0 1 0"/></filter>
+                    
+                    {/* Deuteranopia Filters */}
+                    <filter id="deuteranopia-0"><feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>
+                    <filter id="deuteranopia-25"><feColorMatrix type="matrix" values="0.800 0.200 0 0 0 0.258 0.742 0 0 0 0.000 0.142 0.858 0 0 0 0 0 1 0"/></filter>
+                    <filter id="deuteranopia-50"><feColorMatrix type="matrix" values="0.625 0.375 0 0 0 0.700 0.300 0 0 0 0.000 0.300 0.700 0 0 0 0 0 1 0"/></filter>
+                    <filter id="deuteranopia-75"><feColorMatrix type="matrix" values="0.425 0.575 0 0 0 0.858 0.142 0 0 0 0.000 0.450 0.550 0 0 0 0 0 1 0"/></filter>
+                    <filter id="deuteranopia-100"><feColorMatrix type="matrix" values="0.292 0.708 0 0 0 0.958 0.042 0 0 0 0.000 0.617 0.383 0 0 0 0 0 1 0"/></filter>
+                    
+                    {/* Tritanopia Filters */}
+                    <filter id="tritanopia-0"><feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 1 0"/></filter>
+                    <filter id="tritanopia-25"><feColorMatrix type="matrix" values="0.967 0.033 0 0 0 0 0.733 0.267 0 0 0 0.183 0.817 0 0 0 0 0 1 0"/></filter>
+                    <filter id="tritanopia-50"><feColorMatrix type="matrix" values="0.950 0.050 0 0 0 0 0.433 0.567 0 0 0 0.475 0.525 0 0 0 0 0 1 0"/></filter>
+                    <filter id="tritanopia-75"><feColorMatrix type="matrix" values="0.933 0.067 0 0 0 0 0.267 0.733 0 0 0 0.692 0.308 0 0 0 0 0 1 0"/></filter>
+                    <filter id="tritanopia-100"><feColorMatrix type="matrix" values="0.917 0.083 0 0 0 0 0.125 0.875 0 0 0 0.875 0.125 0 0 0 0 0 1 0"/></filter>
+                </defs>
+            </svg>
 
-            {/* Theme Customization */}
-            <section className="bg-white rounded-3xl shadow-sm p-8 space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${currentTheme.primary} flex items-center justify-center`}>
-                        <Palette className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-semibold text-slate-900">
-                            Website Theme
-                        </h2>
-                        <p className="text-sm text-slate-600">
-                            Choose your preferred color scheme
-                        </p>
-                    </div>
+            <div className="max-w-4xl mx-auto p-6 space-y-6">
+                {/* Header */}
+                <div>
+                    <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
+                    <p className="text-sm text-slate-500 mt-1">Customize your experience</p>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {(Object.keys(themeColors) as Array<keyof typeof themeColors>).map((theme) => (
-                        <button
-                            key={theme}
-                            onClick={() => updateSetting("websiteTheme", theme)}
-                            className={`relative p-6 rounded-2xl border-2 transition-all hover:scale-105 ${
-                                settings.websiteTheme === theme
-                                    ? `${themeColors[theme].border} ${themeColors[theme].light}`
-                                    : "border-slate-200 bg-white hover:border-slate-300"
-                            }`}
-                            aria-pressed={settings.websiteTheme === theme}
-                        >
-                            {settings.websiteTheme === theme && (
-                                <div className={`absolute top-3 right-3 w-6 h-6 rounded-full ${themeColors[theme].accent} flex items-center justify-center`}>
-                                    <Check className="w-4 h-4 text-white" />
-                                </div>
-                            )}
-                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${themeColors[theme].primary} mx-auto mb-3`}></div>
-                            <p className={`font-semibold ${settings.websiteTheme === theme ? themeColors[theme].text : "text-slate-700"}`}>
-                                {themeColors[theme].name}
-                            </p>
-                        </button>
-                    ))}
-                </div>
-            </section>
-
-            {/* Color Vision Adjustments */}
-            <section className="bg-white rounded-3xl shadow-sm p-8 space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${currentTheme.primary} flex items-center justify-center`}>
-                        <Eye className="w-6 h-6 text-white" />
+                {/* Theme */}
+                <section className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <Palette className={`w-5 h-5 ${theme.text}`} />
+                        <h2 className="text-lg font-medium text-slate-900">Theme</h2>
                     </div>
-                    <div>
-                        <h2 className="text-xl font-semibold text-slate-900">
-                            Color Vision Support
-                        </h2>
-                        <p className="text-sm text-slate-600">
-                            Adjust for different types of color vision
-                        </p>
+                    <div className="grid grid-cols-3 gap-3">
+                        {(Object.keys(themes) as Array<keyof typeof themes>).map((t) => (
+                            <button
+                                key={t}
+                                onClick={() => updateSetting("websiteTheme", t)}
+                                className={`relative p-4 rounded-xl border-2 transition-all ${
+                                    settings.websiteTheme === t
+                                        ? `${themes[t].border} ${themes[t].light}`
+                                        : "border-slate-200 hover:border-slate-300"
+                                }`}
+                            >
+                                {settings.websiteTheme === t && (
+                                    <Check className={`absolute top-2 right-2 w-4 h-4 ${themes[t].text}`} />
+                                )}
+                                <div className={`w-12 h-12 rounded-lg ${themes[t].color} mx-auto mb-2`}></div>
+                                <p className="text-xs text-slate-700">{themes[t].name}</p>
+                            </button>
+                        ))}
                     </div>
-                </div>
+                </section>
 
-                {/* Protanopia */}
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <label htmlFor="protanopia-slider" className="text-sm font-medium text-slate-900 block">
-                                Protanopia (Red-Blind)
+                {/* Color Vision */}
+                <section className="bg-white rounded-2xl shadow-sm p-6 space-y-5">
+                    <div className="flex items-center gap-3">
+                        <Eye className={`w-5 h-5 ${theme.text}`} />
+                        <h2 className="text-lg font-medium text-slate-900">Color Vision</h2>
+                    </div>
+
+                    {/* Protanopia */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <label htmlFor="protanopia" className="text-sm text-slate-700">
+                                Protanopia
                             </label>
-                            <p className="text-xs text-slate-500 mt-1">
-                                Difficulty with red and green colors
-                            </p>
+                            <span className={`text-sm font-medium ${theme.text}`}>{settings.protanopia}%</span>
                         </div>
-                        <span className={`text-lg font-semibold ${currentTheme.text} min-w-[3rem] text-right`} aria-live="polite">
-                            {settings.protanopia}%
-                        </span>
-                    </div>
-                    <div className={`p-4 ${currentTheme.light} rounded-xl`}>
                         <input
-                            id="protanopia-slider"
+                            id="protanopia"
                             type="range"
                             min="0"
                             max="100"
                             value={settings.protanopia}
                             onChange={(e) => updateSetting("protanopia", Number(e.target.value))}
-                            className={`w-full h-2 bg-white rounded-lg appearance-none cursor-pointer`}
+                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
                     </div>
-                </div>
 
-                {/* Deuteranopia */}
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <label htmlFor="deuteranopia-slider" className="text-sm font-medium text-slate-900 block">
-                                Deuteranopia (Green-Blind)
+                    {/* Deuteranopia */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <label htmlFor="deuteranopia" className="text-sm text-slate-700">
+                                Deuteranopia
                             </label>
-                            <p className="text-xs text-slate-500 mt-1">
-                                Difficulty with green and red colors
-                            </p>
+                            <span className={`text-sm font-medium ${theme.text}`}>{settings.deuteranopia}%</span>
                         </div>
-                        <span className={`text-lg font-semibold ${currentTheme.text} min-w-[3rem] text-right`} aria-live="polite">
-                            {settings.deuteranopia}%
-                        </span>
-                    </div>
-                    <div className={`p-4 ${currentTheme.light} rounded-xl`}>
                         <input
-                            id="deuteranopia-slider"
+                            id="deuteranopia"
                             type="range"
                             min="0"
                             max="100"
                             value={settings.deuteranopia}
                             onChange={(e) => updateSetting("deuteranopia", Number(e.target.value))}
-                            className={`w-full h-2 bg-white rounded-lg appearance-none cursor-pointer`}
+                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
                     </div>
-                </div>
 
-                {/* Tritanopia */}
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <label htmlFor="tritanopia-slider" className="text-sm font-medium text-slate-900 block">
-                                Tritanopia (Blue-Blind)
+                    {/* Tritanopia */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <label htmlFor="tritanopia" className="text-sm text-slate-700">
+                                Tritanopia
                             </label>
-                            <p className="text-xs text-slate-500 mt-1">
-                                Difficulty with blue and yellow colors
-                            </p>
+                            <span className={`text-sm font-medium ${theme.text}`}>{settings.tritanopia}%</span>
                         </div>
-                        <span className={`text-lg font-semibold ${currentTheme.text} min-w-[3rem] text-right`} aria-live="polite">
-                            {settings.tritanopia}%
-                        </span>
-                    </div>
-                    <div className={`p-4 ${currentTheme.light} rounded-xl`}>
                         <input
-                            id="tritanopia-slider"
+                            id="tritanopia"
                             type="range"
                             min="0"
                             max="100"
                             value={settings.tritanopia}
                             onChange={(e) => updateSetting("tritanopia", Number(e.target.value))}
-                            className={`w-full h-2 bg-white rounded-lg appearance-none cursor-pointer`}
+                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
                     </div>
-                </div>
 
-                {/* Color Preview */}
-                <div className={`p-6 ${currentTheme.light} rounded-2xl border ${currentTheme.border}`}>
-                    <p className="text-sm font-medium text-slate-700 mb-4">Color Preview:</p>
-                    <div className="grid grid-cols-6 gap-3">
+                    {/* Preview */}
+                    <div className="flex gap-2 pt-2">
                         {[
                             { name: "Red", color: "bg-red-500" },
                             { name: "Green", color: "bg-green-500" },
@@ -306,151 +215,118 @@ export default function SettingsPage() {
                             { name: "Yellow", color: "bg-yellow-400" },
                             { name: "Purple", color: "bg-purple-500" },
                             { name: "Orange", color: "bg-orange-500" },
-                        ].map((swatch) => (
-                            <div key={swatch.name} className="text-center">
-                                <div className={`w-full h-14 ${swatch.color} rounded-xl mb-2 shadow-sm`} aria-label={`${swatch.name} swatch`}></div>
-                                <p className="text-xs text-slate-600">{swatch.name}</p>
+                        ].map((c) => (
+                            <div key={c.name} className="flex-1">
+                                <div className={`h-10 ${c.color} rounded-lg`} title={c.name}></div>
                             </div>
                         ))}
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Text & Display */}
-            <section className="bg-white rounded-3xl shadow-sm p-8 space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${currentTheme.primary} flex items-center justify-center`}>
-                        <Type className="w-6 h-6 text-white" />
+                {/* Text & Display */}
+                <section className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <Type className={`w-5 h-5 ${theme.text}`} />
+                        <h2 className="text-lg font-medium text-slate-900">Display</h2>
                     </div>
-                    <div>
-                        <h2 className="text-xl font-semibold text-slate-900">
-                            Text & Display
-                        </h2>
-                        <p className="text-sm text-slate-600">
-                            Adjust text size for better readability
-                        </p>
-                    </div>
-                </div>
 
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                        <label htmlFor="font-size-slider" className="text-sm font-medium text-slate-900">
-                            Base Font Size
-                        </label>
-                        <span className={`text-lg font-semibold ${currentTheme.text}`} aria-live="polite">
-                            {settings.fontSize}px
-                        </span>
-                    </div>
-                    <div className={`p-4 ${currentTheme.light} rounded-xl`}>
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                            <label htmlFor="font-size" className="text-sm text-slate-700">
+                                Font Size
+                            </label>
+                            <span className={`text-sm font-medium ${theme.text}`}>{settings.fontSize}px</span>
+                        </div>
                         <input
-                            id="font-size-slider"
+                            id="font-size"
                             type="range"
                             min="12"
                             max="24"
                             value={settings.fontSize}
                             onChange={(e) => updateSetting("fontSize", Number(e.target.value))}
-                            className={`w-full h-2 bg-white rounded-lg appearance-none cursor-pointer`}
+                            className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                         />
-                    </div>
-                    <div className={`p-4 ${currentTheme.light} rounded-xl`}>
-                        <p className="text-slate-600" style={{ fontSize: `${settings.fontSize}px` }}>
-                            The quick brown fox jumps over the lazy dog
+                        <p className="text-slate-500 text-xs pt-2" style={{ fontSize: `${settings.fontSize}px` }}>
+                            Preview text
                         </p>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* Motion & Effects */}
-            <section className="bg-white rounded-3xl shadow-sm p-8 space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${currentTheme.primary} flex items-center justify-center`}>
-                        <Zap className="w-6 h-6 text-white" />
+                {/* Motion & Effects */}
+                <section className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <Zap className={`w-5 h-5 ${theme.text}`} />
+                        <h2 className="text-lg font-medium text-slate-900">Effects</h2>
                     </div>
-                    <div>
-                        <h2 className="text-xl font-semibold text-slate-900">
-                            Motion & Effects
-                        </h2>
-                        <p className="text-sm text-slate-600">
-                            Control animations and visual effects
-                        </p>
-                    </div>
-                </div>
 
-                {/* Reduce Motion */}
-                <div className={`flex items-center justify-between p-5 ${currentTheme.light} rounded-2xl`}>
-                    <div className="flex-1">
-                        <label htmlFor="reduce-motion-toggle" className="text-sm font-medium text-slate-900 block cursor-pointer">
-                            Reduce Motion
-                        </label>
-                        <p className="text-xs text-slate-600 mt-1">
-                            Minimize animations for a calmer experience
-                        </p>
-                    </div>
-                    <button
-                        id="reduce-motion-toggle"
-                        role="switch"
-                        aria-checked={settings.reduceMotion}
-                        onClick={() => updateSetting("reduceMotion", !settings.reduceMotion)}
-                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                            settings.reduceMotion ? `bg-gradient-to-r ${currentTheme.primary}` : "bg-slate-300"
-                        }`}
-                    >
-                        <span
-                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${
-                                settings.reduceMotion ? "translate-x-6" : "translate-x-1"
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <label htmlFor="reduce-motion" className="text-sm text-slate-700 cursor-pointer">
+                                Reduce Motion
+                            </label>
+                            <p className="text-xs text-slate-500 mt-0.5">Minimize animations</p>
+                        </div>
+                        <button
+                            id="reduce-motion"
+                            role="switch"
+                            aria-checked={settings.reduceMotion}
+                            onClick={() => updateSetting("reduceMotion", !settings.reduceMotion)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                settings.reduceMotion ? theme.color : "bg-slate-300"
                             }`}
-                        />
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                    settings.reduceMotion ? "translate-x-6" : "translate-x-1"
+                                }`}
+                            />
+                        </button>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2">
+                        <div>
+                            <label htmlFor="high-contrast" className="text-sm text-slate-700 cursor-pointer">
+                                High Contrast
+                            </label>
+                            <p className="text-xs text-slate-500 mt-0.5">Increase visibility</p>
+                        </div>
+                        <button
+                            id="high-contrast"
+                            role="switch"
+                            aria-checked={settings.highContrast}
+                            onClick={() => updateSetting("highContrast", !settings.highContrast)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                settings.highContrast ? theme.color : "bg-slate-300"
+                            }`}
+                        >
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                    settings.highContrast ? "translate-x-6" : "translate-x-1"
+                                }`}
+                            />
+                        </button>
+                    </div>
+                </section>
+
+                {/* Reset */}
+                <div className="flex justify-end">
+                    <button
+                        onClick={() => {
+                            setSettings({
+                                protanopia: 0,
+                                deuteranopia: 0,
+                                tritanopia: 0,
+                                fontSize: 16,
+                                reduceMotion: false,
+                                highContrast: false,
+                                websiteTheme: "teal",
+                            });
+                        }}
+                        className="px-5 py-2 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+                        Reset to Defaults
                     </button>
                 </div>
-
-                {/* High Contrast */}
-                <div className={`flex items-center justify-between p-5 ${currentTheme.light} rounded-2xl`}>
-                    <div className="flex-1">
-                        <label htmlFor="high-contrast-toggle" className="text-sm font-medium text-slate-900 block cursor-pointer">
-                            High Contrast Mode
-                        </label>
-                        <p className="text-xs text-slate-600 mt-1">
-                            Increase contrast for better visibility
-                        </p>
-                    </div>
-                    <button
-                        id="high-contrast-toggle"
-                        role="switch"
-                        aria-checked={settings.highContrast}
-                        onClick={() => updateSetting("highContrast", !settings.highContrast)}
-                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                            settings.highContrast ? `bg-gradient-to-r ${currentTheme.primary}` : "bg-slate-300"
-                        }`}
-                    >
-                        <span
-                            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform ${
-                                settings.highContrast ? "translate-x-6" : "translate-x-1"
-                            }`}
-                        />
-                    </button>
-                </div>
-            </section>
-
-            {/* Reset Button */}
-            <div className="flex justify-end">
-                <button
-                    onClick={() => {
-                        const defaults: AccessibilitySettings = {
-                            protanopia: 0,
-                            deuteranopia: 0,
-                            tritanopia: 0,
-                            fontSize: 16,
-                            reduceMotion: false,
-                            highContrast: false,
-                            websiteTheme: "teal",
-                        };
-                        setSettings(defaults);
-                    }}
-                    className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-medium transition-all"
-                >
-                    Reset All Settings
-                </button>
             </div>
-        </div>
+        </>
     );
 }
