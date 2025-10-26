@@ -47,27 +47,14 @@ Feel free to answer any of these, or share whatever you'd like to talk about!`,
         setMessages(newMessages);
         setInput("");
         setIsLoading(true);
-
+        
         try {
-            const response = await fetch("https://api.anthropic.com/v1/messages", {
+            const response = await fetch("/api/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "x-api-key": process.env.CLAUDE_KEY || "",
-                    "anthropic-version": "2023-06-01",
                 },
                 body: JSON.stringify({
-                    model: "claude-sonnet-4-20250514",
-                    max_tokens: 1024,
-                    system: `You are a compassionate and insightful self-development coach. Your role is to:
-- Help users reflect on their thoughts, feelings, and goals
-- Ask thoughtful questions that promote self-discovery
-- Provide supportive guidance without being prescriptive
-- Celebrate progress and encourage growth
-- Be warm, empathetic, and non-judgmental
-- Keep responses concise and actionable (2-4 paragraphs max)
-
-Focus on helping users with goal setting, building healthy habits, managing stress, improving relationships, and finding purpose. Always be supportive, never give medical advice, and encourage professional help when needed.`,
                     messages: newMessages.map((msg) => ({
                         role: msg.role,
                         content: msg.content,
