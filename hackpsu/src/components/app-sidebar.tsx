@@ -10,6 +10,7 @@ import {
   Settings,
   HelpCircle,
   Search,
+  Users,
 } from "lucide-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -42,6 +43,11 @@ const navData = {
       title: "Chat",
       url: "/app/chat",
       icon: MessageSquare,
+    },
+    {
+      title: "Friends",
+      url: "/app/friends",
+      icon: Users,
     },
     {
       title: "Journal",
