@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { handleServerError } from "@/lib/error";
 import { createClient } from '@supabase/supabase-js';
+import { checkDailyFocusBadges } from "@/lib/badge-helper";
 
 // Helper to get authenticated Supabase client
 async function getAuthenticatedClient(authToken: string) {
@@ -159,6 +160,14 @@ export async function POST(req: Request) {
                 );
             }
 
+            // Check for badge eligibility
+            try {
+                await checkDailyFocusBadges(supabase, user.id);
+            } catch (badgeError) {
+                console.error('Badge check error:', badgeError);
+                // Don't fail the request if badge check fails
+            }
+
             return NextResponse.json({ success: true, data }, { status: 200 });
         } else {
             // Create new selection
@@ -179,6 +188,14 @@ export async function POST(req: Request) {
                     { success: false, error: error.message || 'Failed to create focus selection' },
                     { status: 500 }
                 );
+            }
+
+            // Check for badge eligibility
+            try {
+                await checkDailyFocusBadges(supabase, user.id);
+            } catch (badgeError) {
+                console.error('Badge check error:', badgeError);
+                // Don't fail the request if badge check fails
             }
 
             return NextResponse.json({ success: true, data }, { status: 201 });
@@ -229,7 +246,67 @@ export async function PATCH(req: Request) {
             );
         }
 
+        // Check for badge eligibility
+        try {
+            await checkDailyFocusBadges(supabase, user.id);
+        } catch (badgeError) {
+            console.error('Badge check error:', badgeError);
+            // Don't fail the request if badge check fails
+        }
+
         return NextResponse.json({ success: true, data }, { status: 200 });
+
+    } catch (error: any) {
+        if (error.message === 'Unauthorized') {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+        console.error('Unexpected error:', error);
+        return handleServerError(error);
+    }
+}
+
+// Delete a daily focus selection
+export async function DELETE(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get('id');
+        
+        if (!id) {
+            return NextResponse.json(
+                { success: false, error: 'Selection ID is required' },
+                { status: 400 }
+            );
+        }
+
+        // Get auth token from headers
+        const authHeader = req.headers.get('authorization');
+        if (!authHeader) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            );
+        }
+
+        const { supabase, user } = await getAuthenticatedClient(authHeader.replace('Bearer ', ''));
+
+        const { error } = await supabase
+            .from('user_daily_focus')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
+
+        if (error) {
+            console.error('Database error:', error);
+            return NextResponse.json(
+                { success: false, error: error.message || 'Failed to delete focus selection' },
+                { status: 500 }
+            );
+        }
+
+        return NextResponse.json({ success: true }, { status: 200 });
 
     } catch (error: any) {
         if (error.message === 'Unauthorized') {

@@ -52,6 +52,8 @@ interface Badge {
     icon_name: string;
     requirement: string;
     earned?: boolean;
+    progress?: number;
+    earned_at?: string;
 }
 
 export default function BadgesPage() {
@@ -227,9 +229,23 @@ export default function BadgesPage() {
                                                 <p className="text-sm text-slate-600 mb-2">{badge.description}</p>
                                             </div>
                                         </div>
-                                        <div className="text-xs text-slate-500 bg-slate-50 rounded-lg p-2 font-mono">
-                                            {badge.requirement}
-                                        </div>
+                                        {(badge.progress && badge.progress > 0) ? (
+                                            <div className="space-y-2">
+                                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-gradient-to-r from-teal-400 to-cyan-500 transition-all duration-500"
+                                                        style={{ width: `${Math.min(badge.progress, 100)}%` }}
+                                                    />
+                                                </div>
+                                                <div className="text-xs text-slate-500 bg-slate-50 rounded-lg p-2 font-mono">
+                                                    {badge.progress}% - {badge.requirement}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs text-slate-500 bg-slate-50 rounded-lg p-2 font-mono">
+                                                {badge.requirement}
+                                            </div>
+                                        )}
                                     </motion.div>
                                 );
                             })}

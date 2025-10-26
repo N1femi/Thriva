@@ -1,9 +1,19 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Plus, Calendar, Edit2, Save, X } from 'lucide-react';
+import { BookOpen, Plus, Calendar, Edit2, Save, X, Trash2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface JournalEntry {
   id: string;
@@ -21,6 +31,9 @@ export default function JournalPage() {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState({ title: '', content: '' });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
 
   // Fetch entries from database
   useEffect(() => {
@@ -202,6 +215,61 @@ export default function JournalPage() {
     }
   };
 
+  const handleDeleteClick = (entryId: string) => {
+    setEntryToDelete(entryId);
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!entryToDelete || !user?.id) return;
+
+    try {
+      setDeletingId(entryToDelete);
+      
+      // Get fresh session to ensure we have latest token
+      const { data: { session: freshSession }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !freshSession) {
+        console.error('Session error:', sessionError);
+        return;
+      }
+      
+      const accessToken = freshSession?.access_token;
+      
+      if (!accessToken) {
+        console.error('No access token available');
+        return;
+      }
+
+      const response = await fetch(`/api/journal?id=${entryToDelete}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+
+      console.log('Delete response status:', response.status);
+      const result = await response.json();
+      console.log('Delete result:', result);
+
+      if (result.success) {
+        // Remove entry from the list
+        setEntries(entries.filter(entry => entry.id !== entryToDelete));
+        toast.success('Entry deleted successfully');
+      } else {
+        console.error('Failed to delete entry:', result.error);
+        toast.error('Failed to delete entry: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      toast.error('Error deleting entry');
+    } finally {
+      setDeletingId(null);
+      setShowDeleteDialog(false);
+      setEntryToDelete(null);
+    }
+  };
+
   return (
     <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50">
       <main className="max-w-5xl mx-auto px-6 py-8">
@@ -302,6 +370,14 @@ export default function JournalPage() {
                       />
                       <div className="flex gap-3 justify-end mt-4">
                         <button
+                          onClick={() => handleDeleteClick(entry.id)}
+                          disabled={saving}
+                          className="flex items-center gap-2 px-6 py-2 rounded-full text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
+                        <button
                           onClick={handleCancelEdit}
                           disabled={saving}
                           className="flex items-center gap-2 px-6 py-2 rounded-full text-cyan-700 hover:bg-cyan-100 transition-colors disabled:opacity-50"
@@ -340,14 +416,24 @@ export default function JournalPage() {
                             </div>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleStartEdit(entry)}
-                          className="flex items-center gap-2 px-4 py-2 rounded-full text-cyan-700 hover:bg-cyan-50 transition-colors opacity-0 group-hover:opacity-100"
-                          title="Edit entry"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                          <span className="text-sm">Edit</span>
-                        </button>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleStartEdit(entry)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-full text-cyan-700 hover:bg-cyan-50 transition-colors"
+                            title="Edit entry"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            <span className="text-sm">Edit</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(entry.id)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-full text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete entry"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            <span className="text-sm">Delete</span>
+                          </button>
+                        </div>
                       </div>
                       <p className="text-cyan-800 leading-relaxed mb-4 whitespace-pre-wrap">
                         {entry.text}
@@ -375,6 +461,27 @@ export default function JournalPage() {
           </>
         )}
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Journal Entry</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

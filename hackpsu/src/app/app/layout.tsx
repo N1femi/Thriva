@@ -3,11 +3,32 @@
 import ProtectedRoute from "@/components/protected-route";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { LogOut, Target, User } from "lucide-react";
+import { LogOut, Target, User, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
+import { NotificationProvider, useNotifications } from "@/lib/notification-context";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+
+function NotificationButton() {
+    const { unreadCount } = useNotifications();
+    
+    return (
+        <Link href="/app/notifications">
+            <Button variant="ghost" size="sm" className="relative">
+                <Bell className="size-4 mr-2" />
+                Notifications
+                {unreadCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 bg-red-500 text-white text-xs min-w-[20px] h-5">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>
+                )}
+            </Button>
+        </Link>
+    );
+}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
     const { user, signOut } = useAuth();
@@ -39,15 +60,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     return (
         <ProtectedRoute>
-            <SidebarProvider>
-                <AppSidebar 
-                    user={{
-                        name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
-                        email: user?.email || '',
-                        avatar: user?.user_metadata?.avatar_url
-                    }}
-                />
-                <SidebarInset>
+            <NotificationProvider user={user}>
+                <SidebarProvider>
+                    <AppSidebar 
+                        user={{
+                            name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User',
+                            email: user?.email || '',
+                            avatar: user?.user_metadata?.avatar_url
+                        }}
+                    />
+                    <SidebarInset>
                     <header className="bg-white border-b border-slate-200">
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="flex justify-between items-center h-16">
@@ -60,8 +82,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                                         <h1 className="text-xl font-semibold">Thriva</h1>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                <div className="flex items-center gap-2">
+                                    <NotificationButton />
+                                    <div className="flex items-center gap-2 text-sm text-slate-600 px-2">
                                         <User className="size-4" />
                                         <span>{user?.email}</span>
                                     </div>
@@ -76,8 +99,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     <main className="h-[calc(100vh-4rem)] overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100">
                         {children}
                     </main>
-                </SidebarInset>
-            </SidebarProvider>
+                    </SidebarInset>
+                </SidebarProvider>
+            </NotificationProvider>
         </ProtectedRoute>
     );
 }

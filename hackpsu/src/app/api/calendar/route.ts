@@ -56,6 +56,7 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const date = searchParams.get('date');
+        const weekView = searchParams.get('weekView') === 'true';
         
         // Get auth token from headers
         const authHeader = req.headers.get('authorization');
@@ -76,14 +77,47 @@ export async function GET(req: Request) {
 
         // Filter by date if provided
         if (date) {
-            const startOfDay = new Date(date);
-            startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date(date);
-            endOfDay.setHours(23, 59, 59, 999);
+            const dateObj = new Date(date);
+            
+            if (weekView) {
+                // Get start and end of the week
+                const dayOfWeek = dateObj.getDay();
+                const startOfWeek = new Date(dateObj);
+                startOfWeek.setDate(dateObj.getDate() - dayOfWeek);
+                startOfWeek.setHours(0, 0, 0, 0);
+                
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                endOfWeek.setHours(23, 59, 59, 999);
 
-            query = query
-                .gte('start_time', startOfDay.toISOString())
-                .lte('start_time', endOfDay.toISOString());
+                query = query
+                    .gte('start_time', startOfWeek.toISOString())
+                    .lte('start_time', endOfWeek.toISOString());
+            } else {
+                // Check if we want month view (monthView param)
+                const monthView = searchParams.get('monthView') === 'true';
+                
+                if (monthView) {
+                    // Get all events for the month
+                    const startOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+                    const endOfMonth = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
+                    endOfMonth.setHours(23, 59, 59, 999);
+
+                    query = query
+                        .gte('start_time', startOfMonth.toISOString())
+                        .lte('start_time', endOfMonth.toISOString());
+                } else {
+                    // Filter by single day
+                    const startOfDay = new Date(date);
+                    startOfDay.setHours(0, 0, 0, 0);
+                    const endOfDay = new Date(date);
+                    endOfDay.setHours(23, 59, 59, 999);
+
+                    query = query
+                        .gte('start_time', startOfDay.toISOString())
+                        .lte('start_time', endOfDay.toISOString());
+                }
+            }
         }
 
         const { data, error } = await query;

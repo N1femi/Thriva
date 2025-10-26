@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
 import * as friendsService from "@/services/db/friends";
 import { handleServerError } from "@/lib/error";
+import { checkFriendsBadges } from "@/lib/badge-helper";
 
 // Helper to get authenticated Supabase client
 async function getAuthenticatedClient(authToken: string) {
@@ -58,10 +59,10 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { user } = await getAuthenticatedClient(token);
+    const { supabase, user } = await getAuthenticatedClient(token);
 
     // Get friends using the service
-    const friends = await friendsService.getFriends(user.id);
+    const friends = await friendsService.getFriends(user.id, supabase);
 
     return NextResponse.json({
       success: true,
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { user } = await getAuthenticatedClient(token);
+    const { supabase, user } = await getAuthenticatedClient(token);
 
     const { friendId } = await request.json();
 
@@ -104,7 +105,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Add friend
-    const friend = await friendsService.addFriend(user.id, friendId);
+    // Note: Notifications for friend additions are automatically created by database triggers
+    const friend = await friendsService.addFriend(user.id, friendId, supabase);
+
+    // Check for badge eligibility
+    try {
+        await checkFriendsBadges(supabase, user.id);
+    } catch (badgeError) {
+        console.error('Badge check error:', badgeError);
+        // Don't fail the request if badge check fails
+    }
 
     return NextResponse.json({
       success: true,
@@ -122,6 +132,49 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// PUT /api/friends - Search for users
+export async function PUT(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    
+    if (!authHeader) {
+        return NextResponse.json(
+            { success: false, error: 'Unauthorized' },
+            { status: 401 }
+        );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { supabase, user } = await getAuthenticatedClient(token);
+
+    const { searchTerm } = await request.json();
+
+    if (!searchTerm || typeof searchTerm !== 'string') {
+      return NextResponse.json(
+        { success: false, error: "searchTerm is required" },
+        { status: 400 }
+      );
+    }
+
+    // Search for users
+    const results = await friendsService.searchUsers(searchTerm, user.id, supabase);
+
+    return NextResponse.json({
+      success: true,
+      data: results
+    });
+  } catch (error: any) {
+    if (error.message === 'Unauthorized') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    console.error("Error searching users:", error);
+    return handleServerError(error);
+  }
+}
+
 // DELETE /api/friends - Remove a friend
 export async function DELETE(request: NextRequest) {
   try {
@@ -135,7 +188,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const { user } = await getAuthenticatedClient(token);
+    const { supabase, user } = await getAuthenticatedClient(token);
 
     const { searchParams } = new URL(request.url);
     const friendId = searchParams.get("friendId");
@@ -148,7 +201,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remove friend
-    await friendsService.removeFriend(user.id, friendId);
+    await friendsService.removeFriend(user.id, friendId, supabase);
 
     return NextResponse.json({
       success: true,

@@ -55,11 +55,13 @@ const getOrCreateProfile = async (userId: string): Promise<Profile> => {
 };
 
 // Get all friends for a user (both directions)
-export const getFriends = async (userId: string): Promise<Profile[]> => {
+export const getFriends = async (userId: string, supabaseClient?: any): Promise<Profile[]> => {
+    const client = supabaseClient || supabase;
+    
     // Ensure current user has a profile
     await getOrCreateProfile(userId);
 
-    const { data, error } = await supabase
+    const { data, error } = await client
         .from("Friends")
         .select("profile_one, profile_two")
         .or(`profile_one.eq.${userId},profile_two.eq.${userId}`);
@@ -69,26 +71,28 @@ export const getFriends = async (userId: string): Promise<Profile[]> => {
     if (!data || data.length === 0) return [];
     
     // Get friend IDs
-    const friendIds = data.map(friend => 
+    const friendIds: string[] = data.map((friend: Friend) => 
         friend.profile_one === userId ? friend.profile_two : friend.profile_one
     );
     
     // Get or create profiles for all friends
     const profiles = await Promise.all(
-        friendIds.map(id => getOrCreateProfile(id))
+        friendIds.map((id: string) => getOrCreateProfile(id))
     );
     
     return profiles;
 };
 
 // Add a friend relationship
-export const addFriend = async (userId: string, friendId: string): Promise<Friend> => {
+export const addFriend = async (userId: string, friendId: string, supabaseClient?: any): Promise<Friend> => {
+    const client = supabaseClient || supabase;
+    
     // Ensure both users have profiles
     await getOrCreateProfile(userId);
     await getOrCreateProfile(friendId);
 
     // Check if friendship already exists
-    const { data: existing, error: checkError } = await supabase
+    const { data: existing, error: checkError } = await client
         .from("Friends")
         .select("*")
         .or(`and(profile_one.eq.${userId},profile_two.eq.${friendId}),and(profile_one.eq.${friendId},profile_two.eq.${userId})`)
@@ -102,7 +106,7 @@ export const addFriend = async (userId: string, friendId: string): Promise<Frien
         throw new Error("Friendship already exists");
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
         .from("Friends")
         .insert({
             profile_one: userId,
@@ -118,8 +122,10 @@ export const addFriend = async (userId: string, friendId: string): Promise<Frien
 };
 
 // Remove a friend relationship
-export const removeFriend = async (userId: string, friendId: string): Promise<void> => {
-    const { error } = await supabase
+export const removeFriend = async (userId: string, friendId: string, supabaseClient?: any): Promise<void> => {
+    const client = supabaseClient || supabase;
+    
+    const { error } = await client
         .from("Friends")
         .delete()
         .or(`and(profile_one.eq.${userId},profile_two.eq.${friendId}),and(profile_one.eq.${friendId},profile_two.eq.${userId})`);
@@ -146,21 +152,25 @@ export const getUserProfile = async (userId: string): Promise<Profile | null> =>
 };
 
 // Search for users by name (excluding current user and existing friends)
-export const searchUsers = async (searchTerm: string, currentUserId: string): Promise<Profile[]> => {
+export const searchUsers = async (searchTerm: string, currentUserId: string, supabaseClient?: any): Promise<Profile[]> => {
+    const client = supabaseClient || supabase;
+    
     // First, get current user's friends
-    const friends = await getFriends(currentUserId);
-    const friendIds = friends.map(f => f.id);
+    const friends = await getFriends(currentUserId, client);
+    const friendIds = friends.map((f: { id: string }) => f.id);
     
     // Search for profiles
-    const { data, error } = await supabase
+    const { data, error } = await client
         .from("profiles")
         .select("*")
         .ilike("name", `%${searchTerm}%`)
-        .neq("id", currentUserId)
-        .not("id", "in", `(${friendIds.join(',')})`);
+        .neq("id", currentUserId);
 
     if (error) throw new Error(error.message);
     
-    return data || [];
+    // Filter out existing friends
+    const filteredData = (data || []).filter((profile: Profile) => !friendIds.includes(profile.id));
+    
+    return filteredData;
 };
 

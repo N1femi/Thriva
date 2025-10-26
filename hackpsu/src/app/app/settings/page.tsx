@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Eye, Type, Zap, Palette, Check } from "lucide-react";
+import { Eye, Type, Zap, Palette, Check, Bell, Users, BookOpen, Award, Calendar } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 interface AccessibilitySettings {
     protanopia: number;
@@ -22,7 +25,21 @@ const themes = {
     orange: { name: "Orange", color: "bg-orange-500", light: "bg-orange-50", text: "text-orange-600", border: "border-orange-500" },
 };
 
+interface NotificationPreference {
+    type: string;
+    enabled: boolean;
+}
+
+const notificationTypes = [
+    { type: "friend_request", label: "Friend Requests", icon: Users, color: "bg-blue-100 text-blue-600" },
+    { type: "friend_added", label: "Friend Additions", icon: Users, color: "bg-blue-100 text-blue-600" },
+    { type: "journal_entry", label: "Journal Entries", icon: BookOpen, color: "bg-purple-100 text-purple-600" },
+    { type: "badge_earned", label: "Badge Earnings", icon: Award, color: "bg-yellow-100 text-yellow-600" },
+    { type: "calendar_event", label: "Calendar Events", icon: Calendar, color: "bg-green-100 text-green-600" },
+];
+
 export default function SettingsPage() {
+    const { user } = useAuth();
     const [settings, setSettings] = useState<AccessibilitySettings>({
         protanopia: 0,
         deuteranopia: 0,
@@ -32,6 +49,9 @@ export default function SettingsPage() {
         highContrast: false,
         websiteTheme: "teal",
     });
+    
+    const [notificationPreferences, setNotificationPreferences] = useState<Map<string, boolean>>(new Map());
+    const [loadingPreferences, setLoadingPreferences] = useState(false);
 
     useEffect(() => {
         const saved = localStorage.getItem("accessibility-settings");
@@ -43,6 +63,41 @@ export default function SettingsPage() {
             }
         }
     }, []);
+
+    useEffect(() => {
+        const loadNotificationPreferences = async () => {
+            if (!user) return;
+            
+            setLoadingPreferences(true);
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) return;
+
+                const response = await fetch('/api/notification-preferences', {
+                    headers: {
+                        'Authorization': `Bearer ${session.access_token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        const prefsMap = new Map<string, boolean>();
+                        data.data.forEach((pref: any) => {
+                            prefsMap.set(pref.notification_type, pref.enabled);
+                        });
+                        setNotificationPreferences(prefsMap);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading notification preferences:', error);
+            } finally {
+                setLoadingPreferences(false);
+            }
+        };
+
+        loadNotificationPreferences();
+    }, [user]);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -76,6 +131,45 @@ export default function SettingsPage() {
         value: AccessibilitySettings[K]
     ) => {
         setSettings((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const toggleNotificationPreference = async (type: string, enabled: boolean) => {
+        if (!user) return;
+        
+        setNotificationPreferences((prev) => {
+            const newMap = new Map(prev);
+            newMap.set(type, enabled);
+            return newMap;
+        });
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const response = await fetch('/api/notification-preferences', {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type, enabled })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update preference');
+            }
+            
+            toast.success("Notification preference updated");
+        } catch (error) {
+            console.error('Error updating notification preference:', error);
+            toast.error("Failed to update notification preference");
+            // Revert the change
+            setNotificationPreferences((prev) => {
+                const newMap = new Map(prev);
+                newMap.set(type, !enabled);
+                return newMap;
+            });
+        }
     };
 
     const theme = themes[settings.websiteTheme];
@@ -306,6 +400,61 @@ export default function SettingsPage() {
                             />
                         </button>
                     </div>
+                </section>
+
+                {/* Notification Preferences */}
+                <section className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                        <Bell className={`w-5 h-5 ${theme.text}`} />
+                        <h2 className="text-lg font-medium text-slate-900">Notification Preferences</h2>
+                    </div>
+                    <p className="text-sm text-slate-500">
+                        Choose which types of notifications you want to receive
+                    </p>
+                    
+                    {loadingPreferences ? (
+                        <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {notificationTypes.map(({ type, label, icon: Icon, color }) => {
+                                const enabled = notificationPreferences.get(type) ?? true;
+                                return (
+                                    <div
+                                        key={type}
+                                        className="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-slate-300 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 ${color} rounded-lg`}>
+                                                <Icon className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-slate-900">{label}</p>
+                                                <p className="text-xs text-slate-500">
+                                                    {enabled ? "You'll receive these notifications" : "Notifications disabled"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => toggleNotificationPreference(type, !enabled)}
+                                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                                enabled ? theme.color : "bg-slate-300"
+                                            }`}
+                                            role="switch"
+                                            aria-checked={enabled}
+                                        >
+                                            <span
+                                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                                    enabled ? "translate-x-6" : "translate-x-1"
+                                                }`}
+                                            />
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </section>
 
                 {/* Reset */}

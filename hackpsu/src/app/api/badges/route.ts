@@ -71,7 +71,7 @@ export async function GET(req: Request) {
             );
         }
 
-        // Get user's earned badges
+        // Get user's badge progress
         const { data: userBadges, error: userBadgesError } = await supabase
             .from('user_badges')
             .select('*')
@@ -84,13 +84,21 @@ export async function GET(req: Request) {
             );
         }
 
-        const earnedBadgeIds = new Set(userBadges?.map(ub => ub.badge_id) || []);
+        // Create a map of badge_id -> badge data for quick lookup
+        const badgeProgressMap = new Map(
+            userBadges?.map(ub => [ub.badge_id, ub]) || []
+        );
 
-        // Combine data
-        const badgesWithStatus = allBadges?.map(badge => ({
-            ...badge,
-            earned: earnedBadgeIds.has(badge.id)
-        })) || [];
+        // Combine data with progress
+        const badgesWithStatus = allBadges?.map(badge => {
+            const userBadge = badgeProgressMap.get(badge.id);
+            return {
+                ...badge,
+                earned: userBadge?.earned || false,
+                progress: userBadge?.progress || 0,
+                earned_at: userBadge?.earned_at
+            };
+        }) || [];
 
         return NextResponse.json(
             { success: true, data: badgesWithStatus },

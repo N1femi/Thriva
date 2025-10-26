@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { handleServerError } from "@/lib/error";
 import { createClient } from '@supabase/supabase-js';
+import { checkChatBadges } from "@/lib/badge-helper";
 
 // Helper to get authenticated Supabase client
 async function getAuthenticatedClient(authToken: string) {
@@ -289,6 +290,14 @@ RESPONSE GUIDELINES:
                 role: 'assistant',
                 content: assistantContent,
             });
+
+        // Check for badge eligibility
+        try {
+            await checkChatBadges(supabase, user.id);
+        } catch (badgeError) {
+            console.error('Badge check error:', badgeError);
+            // Don't fail the request if badge check fails
+        }
 
         return NextResponse.json({ 
             content: data.content,

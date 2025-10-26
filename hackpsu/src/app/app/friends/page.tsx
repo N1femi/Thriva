@@ -9,6 +9,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Profile {
     id: string;
@@ -24,6 +34,8 @@ export default function FriendsPage() {
     const [searchResults, setSearchResults] = useState<Profile[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [addingFriend, setAddingFriend] = useState<string | null>(null);
+    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [friendToRemove, setFriendToRemove] = useState<string | null>(null);
 
     // Fetch friends
     const fetchFriends = async () => {
@@ -82,31 +94,28 @@ export default function FriendsPage() {
             
             if (!session) return;
 
-            // For now, since profiles table might be empty, we'll just show a message
-            // In a real implementation, you'd want to fetch from auth.users or have profiles populated
-            // For demonstration, we'll create placeholder users
-            const { data: profiles, error } = await supabase
-                .from("profiles")
-                .select("*")
-                .ilike("name", `%${searchTerm}%`);
+            const response = await fetch('/api/friends', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ searchTerm })
+            });
 
-            if (error) {
-                console.error('Search error:', error);
-                // Don't throw, just show no results
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    setSearchResults(data.data || []);
+                } else {
+                    setSearchResults([]);
+                }
+            } else {
+                console.error('Search error:', response.status);
                 setSearchResults([]);
-                return;
             }
-
-            // Filter out current user and existing friends
-            const friendIds = friends.map(f => f.id);
-            const filteredProfiles = profiles?.filter(
-                profile => profile.id !== user?.id && !friendIds.includes(profile.id)
-            ) || [];
-
-            setSearchResults(filteredProfiles.slice(0, 10));
         } catch (error) {
             console.error('Error searching users:', error);
-            // Don't show error toast, just set empty results
             setSearchResults([]);
         } finally {
             setIsSearching(false);
@@ -163,10 +172,13 @@ export default function FriendsPage() {
     };
 
     // Remove friend
-    const removeFriend = async (friendId: string) => {
-        if (!confirm("Are you sure you want to remove this friend?")) {
-            return;
-        }
+    const handleRemoveClick = (friendId: string) => {
+        setFriendToRemove(friendId);
+        setShowDeleteDialog(true);
+    };
+
+    const handleRemoveConfirm = async () => {
+        if (!friendToRemove) return;
 
         try {
             const { data: { session } } = await supabase.auth.getSession();
@@ -176,7 +188,7 @@ export default function FriendsPage() {
                 return;
             }
 
-            const response = await fetch(`/api/friends?friendId=${friendId}`, {
+            const response = await fetch(`/api/friends?friendId=${friendToRemove}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${session.access_token}`
@@ -192,6 +204,9 @@ export default function FriendsPage() {
         } catch (error) {
             console.error('Error removing friend:', error);
             toast.error("Failed to remove friend");
+        } finally {
+            setShowDeleteDialog(false);
+            setFriendToRemove(null);
         }
     };
 
@@ -349,7 +364,7 @@ export default function FriendsPage() {
                                     <Button
                                         variant="destructive"
                                         size="sm"
-                                        onClick={() => removeFriend(friend.id)}
+                                        onClick={() => handleRemoveClick(friend.id)}
                                         className="w-full"
                                     >
                                         <Trash2 className="w-4 h-4 mr-2" />
@@ -367,6 +382,27 @@ export default function FriendsPage() {
                     )}
                 </div>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove Friend</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to remove this friend? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleRemoveConfirm}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            Remove
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

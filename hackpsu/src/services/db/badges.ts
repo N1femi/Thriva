@@ -12,7 +12,11 @@ export interface UserBadge {
     id: string;
     user_id: string;
     badge_id: string;
+    progress?: number;
+    earned?: boolean;
     earned_at?: string;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export const getAllBadges = async (): Promise<Badge[]> => {
@@ -41,12 +45,19 @@ export const getBadgesWithUserStatus = async (userId: string): Promise<Badge[]> 
         getUserBadges(userId)
     ]);
 
-    const earnedBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
+    const badgeProgressMap = new Map(
+        userBadges.map(ub => [ub.badge_id, ub])
+    );
     
-    return allBadges.map(badge => ({
-        ...badge,
-        earned: earnedBadgeIds.has(badge.id)
-    }));
+    return allBadges.map(badge => {
+        const userBadge = badgeProgressMap.get(badge.id);
+        return {
+            ...badge,
+            earned: userBadge?.earned || false,
+            progress: userBadge?.progress || 0,
+            earned_at: userBadge?.earned_at
+        };
+    });
 };
 
 export const addUserBadge = async (

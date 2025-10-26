@@ -30,6 +30,16 @@ import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const iconMap: Record<string, any> = {
     'book-open': BookOpen,
@@ -56,6 +66,8 @@ interface Badge {
     icon_name: string;
     requirement: string;
     earned?: boolean;
+    progress?: number;
+    earned_at?: string;
 }
 
 interface UpcomingEvent {
@@ -92,6 +104,7 @@ export default function DashboardPageComponent() {
     const [selectedFocus, setSelectedFocus] = useState<DailyFocusSelection | null>(null);
     const [selectedFocuses, setSelectedFocuses] = useState<DailyFocusSelection[]>([]);
     const [showFocusModal, setShowFocusModal] = useState(false);
+    const [showLimitDialog, setShowLimitDialog] = useState(false);
     const [todaysFocus, setTodaysFocus] = useState("Practice mindful breathing and complete your gratitude journal");
 
     // Fetch badges from API
@@ -259,6 +272,15 @@ export default function DashboardPageComponent() {
     const handleSelectFocus = async (focusOption: DailyFocusOption) => {
         if (!user) return;
 
+        // Check if already selected
+        const isAlreadySelected = selectedFocuses.some(f => f.focus_id === focusOption.id);
+        
+        // Check if already have 2 focuses selected (and trying to add a new one)
+        if (!isAlreadySelected && selectedFocuses.length >= 2) {
+            setShowLimitDialog(true);
+            return;
+        }
+
         try {
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             
@@ -354,7 +376,7 @@ export default function DashboardPageComponent() {
             if (result.success) {
                 // Update local state
                 setSelectedFocuses(prev => 
-                    prev.map(s => s.id === selection.id ? { ...s, completed: !s.completed } : s)
+                    prev.map((s: DailyFocusSelection) => s.id === selection.id ? { ...s, completed: !s.completed } : s)
                 );
                 
                 if (selection.id === selectedFocus?.id) {
@@ -366,6 +388,57 @@ export default function DashboardPageComponent() {
         } catch (error: any) {
             console.error('Error toggling focus:', error);
             toast.error('Failed to update focus');
+        }
+    };
+
+    const handleRemoveFocus = async (selection: DailyFocusSelection) => {
+        if (!user) return;
+
+        try {
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError || !session) {
+                toast.error('Not authenticated');
+                return;
+            }
+            
+            const accessToken = session?.access_token;
+            
+            if (!accessToken) {
+                toast.error('Not authenticated');
+                return;
+            }
+
+            const response = await fetch(`/api/daily-focus?id=${selection.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Remove from local state
+                setSelectedFocuses(prev => prev.filter(s => s.id !== selection.id));
+                
+                // Update display
+                const remaining = selectedFocuses.filter(s => s.id !== selection.id);
+                if (remaining.length === 0) {
+                    setTodaysFocus("Practice mindful breathing and complete your gratitude journal");
+                } else if (remaining.length === 1) {
+                    setTodaysFocus(remaining[0].daily_focus?.title || "Focus");
+                } else {
+                    setTodaysFocus(`${remaining.length} focuses selected`);
+                }
+                
+                toast.success('Focus removed');
+            } else {
+                toast.error('Failed to remove focus');
+            }
+        } catch (error: any) {
+            console.error('Error removing focus:', error);
+            toast.error('Failed to remove focus');
         }
     };
 
@@ -461,21 +534,30 @@ export default function DashboardPageComponent() {
                             {/* Show selected focuses with checkboxes */}
                             {selectedFocuses.length > 0 && (
                                 <div className="mt-4 space-y-2 max-h-32 overflow-y-auto">
-                                    {selectedFocuses.map((focus) => (
-                                        <label
-                                            key={focus.id}
-                                            className="flex items-center gap-2 cursor-pointer hover:bg-white/10 rounded-lg p-2 transition"
+                                    {selectedFocuses.map((focus, index) => (
+                                        <div
+                                            key={`focus-${focus.id}-${index}`}
+                                            className="flex items-center gap-2 group"
                                         >
-                                            <input
-                                                type="checkbox"
-                                                checked={focus.completed}
-                                                onChange={() => handleToggleComplete(focus)}
-                                                className="w-4 h-4 rounded border-white/30 bg-white/10 text-teal-600 focus:ring-teal-500 focus:ring-offset-0"
-                                            />
-                                            <span className={`text-sm ${focus.completed ? 'line-through opacity-60' : ''}`}>
-                                                {focus.daily_focus?.title || 'Focus'}
-                                            </span>
-                                        </label>
+                                            <label className="flex items-center gap-2 cursor-pointer hover:bg-white/10 rounded-lg p-2 transition flex-1">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={focus.completed}
+                                                    onChange={() => handleToggleComplete(focus)}
+                                                    className="w-4 h-4 rounded border-white/30 bg-white/10 text-teal-600 focus:ring-teal-500 focus:ring-offset-0"
+                                                />
+                                                <span className={`text-sm ${focus.completed ? 'line-through opacity-60' : ''}`}>
+                                                    {focus.daily_focus?.title || 'Focus'}
+                                                </span>
+                                            </label>
+                                            <button
+                                                onClick={() => handleRemoveFocus(focus)}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/20 rounded"
+                                                title="Remove focus"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             )}
@@ -661,6 +743,23 @@ export default function DashboardPageComponent() {
                     </motion.div>
                 </div>
             )}
+
+            {/* Limit Exceeded Dialog */}
+            <AlertDialog open={showLimitDialog} onOpenChange={setShowLimitDialog}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Focus Limit Reached</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You can only have a maximum of 2 daily focuses at a time. Please remove one of your current focuses before adding a new one.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogAction onClick={() => setShowLimitDialog(false)}>
+                            OK
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
