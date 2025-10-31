@@ -166,11 +166,11 @@ export async function checkCalendarBadges(supabase: any, userId: string) {
 }
 
 export async function checkFriendsBadges(supabase: any, userId: string) {
-    // Get total friends
+    // Get total friends where the user is either profile_one or profile_two
     const { count: totalFriends } = await supabase
         .from('friends')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
+        .or(`profile_one.eq.${userId},profile_two.eq.${userId}`);
 
     // Award friend badges
     await updateBadgeProgress(supabase, userId, 'Social Butterfly', Math.min(totalFriends || 0, 3), 3);

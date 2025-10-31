@@ -13,9 +13,11 @@ export interface Profile {
 }
 
 // Helper: Get or create profile for a user
-const getOrCreateProfile = async (userId: string): Promise<Profile> => {
+const getOrCreateProfile = async (userId: string, supabaseClient?: any): Promise<Profile> => {
+    const client = supabaseClient || supabase;
+    
     // Try to get profile
-    const { data: existingProfile, error: fetchError } = await supabase
+    const { data: existingProfile, error: fetchError } = await client
         .from("profiles")
         .select("*")
         .eq("id", userId)
@@ -31,7 +33,7 @@ const getOrCreateProfile = async (userId: string): Promise<Profile> => {
 
     try {
         // Try to insert profile
-        const { data: newProfile, error: insertError } = await supabase
+        const { data: newProfile, error: insertError } = await client
             .from("profiles")
             .insert({
                 id: userId,
@@ -59,10 +61,10 @@ export const getFriends = async (userId: string, supabaseClient?: any): Promise<
     const client = supabaseClient || supabase;
     
     // Ensure current user has a profile
-    await getOrCreateProfile(userId);
+    await getOrCreateProfile(userId, client);
 
     const { data, error } = await client
-        .from("Friends")
+        .from("friends")
         .select("profile_one, profile_two")
         .or(`profile_one.eq.${userId},profile_two.eq.${userId}`);
 
@@ -77,7 +79,7 @@ export const getFriends = async (userId: string, supabaseClient?: any): Promise<
     
     // Get or create profiles for all friends
     const profiles = await Promise.all(
-        friendIds.map((id: string) => getOrCreateProfile(id))
+        friendIds.map((id: string) => getOrCreateProfile(id, client))
     );
     
     return profiles;
@@ -88,12 +90,12 @@ export const addFriend = async (userId: string, friendId: string, supabaseClient
     const client = supabaseClient || supabase;
     
     // Ensure both users have profiles
-    await getOrCreateProfile(userId);
-    await getOrCreateProfile(friendId);
+    await getOrCreateProfile(userId, client);
+    await getOrCreateProfile(friendId, client);
 
     // Check if friendship already exists
     const { data: existing, error: checkError } = await client
-        .from("Friends")
+        .from("friends")
         .select("*")
         .or(`and(profile_one.eq.${userId},profile_two.eq.${friendId}),and(profile_one.eq.${friendId},profile_two.eq.${userId})`)
         .maybeSingle();
@@ -107,7 +109,7 @@ export const addFriend = async (userId: string, friendId: string, supabaseClient
     }
 
     const { data, error } = await client
-        .from("Friends")
+        .from("friends")
         .insert({
             profile_one: userId,
             profile_two: friendId
@@ -126,7 +128,7 @@ export const removeFriend = async (userId: string, friendId: string, supabaseCli
     const client = supabaseClient || supabase;
     
     const { error } = await client
-        .from("Friends")
+        .from("friends")
         .delete()
         .or(`and(profile_one.eq.${userId},profile_two.eq.${friendId}),and(profile_one.eq.${friendId},profile_two.eq.${userId})`);
 
@@ -156,8 +158,14 @@ export const searchUsers = async (searchTerm: string, currentUserId: string, sup
     const client = supabaseClient || supabase;
     
     // First, get current user's friends
-    const friends = await getFriends(currentUserId, client);
-    const friendIds = friends.map((f: { id: string }) => f.id);
+    let friendIds: string[] = [];
+    try {
+        const friends = await getFriends(currentUserId, client);
+        friendIds = friends.map((f: { id: string }) => f.id);
+    } catch (error) {
+        console.error("Error getting friends list:", error);
+        // Continue with empty friend list if there's an error
+    }
     
     // Search for users by email using raw SQL (when using admin client)
     // This allows us to search auth.users which has email addresses
@@ -169,13 +177,15 @@ export const searchUsers = async (searchTerm: string, currentUserId: string, sup
                 current_user_id: currentUserId
             });
             
-            if (!emailError && usersByEmail && usersByEmail.length > 0) {
+            // If RPC function doesn't exist or has an error, fall through to basic search
+            if (!emailError && usersByEmail && Array.isArray(usersByEmail) && usersByEmail.length > 0) {
                 // Filter out existing friends
                 return usersByEmail.filter((profile: Profile) => !friendIds.includes(profile.id));
             }
         }
-    } catch (error) {
-        console.log("RPC function not available, falling back to basic search");
+    } catch (error: any) {
+        // RPC function may not exist, log and continue to fallback
+        console.log("RPC function not available or error occurred, falling back to basic search:", error?.message);
     }
     
     // Fallback: Search for profiles by name only
@@ -185,7 +195,10 @@ export const searchUsers = async (searchTerm: string, currentUserId: string, sup
         .ilike("name", `%${searchTerm}%`)
         .neq("id", currentUserId);
 
-    if (error) throw new Error(error.message);
+    if (error) {
+        console.error("Error searching profiles:", error);
+        throw new Error(error.message);
+    }
     
     // Filter out existing friends
     const filteredData = (data || []).filter((profile: Profile) => !friendIds.includes(profile.id));
