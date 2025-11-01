@@ -1,7 +1,7 @@
 # Thriva 🌱
 **A holistic personal growth platform powered by AI**
 
-Built at HackPSU | Learn. Build. Share.
+Built at HackPSU
 
 
 
