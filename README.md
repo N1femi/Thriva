@@ -97,22 +97,5 @@ npm run dev
 npm run dev
 ```
 
-
-## 👥 Team
-
-Built with passion at HackPSU 2025
-
-
-## 📝 License
-
-This project is [MIT](LICENSE) licensed.
-
-
-## 🙏 Acknowledgments
-
-- Thanks HackPSU for hosting an amazing hackathon
-- Penn State community for inspiration and support
-- All the open-source tools and libraries that made this possible
-
 ---
 **Made with ❤️ for personal growth and self-improvement**
